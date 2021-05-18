@@ -43,7 +43,7 @@ const getDistance = (xA, xB, yA, yB) => {
 }
 
 const checkDirection = (y, prevY, direction) => {
-    return ((direction === DIRECTION.UP && y > prevY) || (direction === DIRECTION.DOWN && y < prevY))
+    return ((direction === DIRECTION.UP && y >= prevY) || (direction === DIRECTION.DOWN && y <= prevY))
 }
 
 const handleGetImpactInfo = (state, x, y, x1, y1) => {
@@ -59,11 +59,13 @@ const handleGetImpactInfo = (state, x, y, x1, y1) => {
         }
     }
 
-    const impactRight = handleCheckImpactRight(a, b, x1, y, y1 )
-    if (impactRight && checkDirection(impactRight.y, prevYBall, direction)) {
-        const distanceRight = getDistance(prevXBall, impactRight.x, prevYBall, impactRight.y)
-        if (!result.distance || distanceRight < result.distance){
-            result = {distance: distanceRight, direction, x: impactRight.x, y: impactRight.y}
+    if (x1 !== x) {
+        const impactRight = handleCheckImpactRight(a, b, x1, y, y1)
+        if (impactRight && checkDirection(impactRight.y, prevYBall, direction)) {
+            const distanceRight = getDistance(prevXBall, impactRight.x, prevYBall, impactRight.y)
+            if (!result.distance || distanceRight < result.distance) {
+                result = {distance: distanceRight, direction, x: impactRight.x, y: impactRight.y}
+            }
         }
     }
 
@@ -93,7 +95,6 @@ const handleGetImpactInfo = (state, x, y, x1, y1) => {
 const checkImpactTile = (xBall, yBall, xTile) => {
     if (xBall >= xTile - TILE_SIZE.WIDTH / 2 && xBall <= xTile + TILE_SIZE.WIDTH / 2){
         if (yBall >= TILE_SIZE.HEIGHT && yBall - TILE_SIZE.HEIGHT <= BALL_SIZE){
-            cc.log("tai")
             return true
         }
     }

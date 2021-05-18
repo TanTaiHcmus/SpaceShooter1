@@ -7,6 +7,8 @@ var COLOR_RECTANGLE_OPTIONS = {
 
 const REC_AMOUNT = 15
 
+const DISTANCE_CHECK_IMPACT_TILE = 1
+
 const TILE_SIZE = {
     WIDTH: 150,
     HEIGHT: 20

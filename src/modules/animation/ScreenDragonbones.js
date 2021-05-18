@@ -13,7 +13,7 @@ var ScreenDragonbones = cc.Layer.extend({
         this.size = cc.director.getVisibleSize();
         this.size.width -= 200
         this.recSize = this.size.width / REC_AMOUNT;
-        this.speed = 500
+        this.speed = 700
         this.prevXTile = this.size.width / 2
         this.listBrickInvisibleNext = []
         this.hearts = new Array(3).fill().map((item, index) => new HeartComponent(this.size.width + 45 + (HEART_SIZE + 10) * index))
@@ -58,11 +58,14 @@ var ScreenDragonbones = cc.Layer.extend({
             a: -1,
             direction: DIRECTION.UP
         }
+        this.prevXTile = xTile
         this.ball.setPosition(this.state.prevXBall, this.state.prevYBall)
     },
-    handleMoveBallWhenImpactLine: function (impact){
-        this.state.a = - this.state.a;
-        this.state.direction = impact.direction
+    handleMoveBallWhenImpactLine: function (impact, isBottom){
+        if (!isBottom) {
+            this.state.a = - this.state.a;
+            this.state.direction = impact.direction
+        }
         this.state.prevXBall = impact.x;
         this.state.prevYBall = impact.y;
         this.ball.move(this.state.prevXBall, this.state.prevYBall, impact.distance / this.speed)
@@ -100,13 +103,13 @@ var ScreenDragonbones = cc.Layer.extend({
             return
         }
 
-        let impactLeftLine = handleGetImpactInfo(this.state, 0, -30, 0, this.size.height);
+        let impactLeftLine = handleGetImpactInfo(this.state, 0, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, 0, this.size.height);
         if (impactLeftLine.distance){
             this.handleMoveBallWhenImpactLine(impactLeftLine)
             return
         }
 
-        let impactRightLine = handleGetImpactInfo(this.state, this.size.width, -30, this.size.width, this.size.height);
+        let impactRightLine = handleGetImpactInfo(this.state, this.size.width, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, this.size.width, this.size.height);
         if (impactRightLine.distance){
             this.handleMoveBallWhenImpactLine(impactRightLine)
             return;
@@ -118,9 +121,9 @@ var ScreenDragonbones = cc.Layer.extend({
             return;
         }
 
-        let impactBottomLine = handleGetImpactInfo(this.state, 0, -30, this.size.width, -30);
+        let impactBottomLine = handleGetImpactInfo(this.state, 0, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, this.size.width, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE);
         if (impactBottomLine.distance){
-            this.handleMoveBallWhenImpactLine(impactBottomLine)
+            this.handleMoveBallWhenImpactLine(impactBottomLine, true)
         }
     },
     onTouchBegan: function (touch){
@@ -138,7 +141,6 @@ var ScreenDragonbones = cc.Layer.extend({
         return true
     },
     onTouchEnded: function (touch){
-        if (this.ball.getIsMove()) cc.log("move")
         if (!this.ball.getIsMove()){
            this.findNextImpact()
         }
@@ -147,33 +149,35 @@ var ScreenDragonbones = cc.Layer.extend({
     update: function (dt){
         const {x: xBall, y: yBall} = this.ball.getPosition();
         const xTile = this.tile.getPositionX()
+        const distanceTile = xTile - this.prevXTile
+        this.prevXTile = xTile;
 
-        if (this.ball.getIsMove()){
-            if (checkImpactTile(xBall, yBall, xTile) && this.state.prevYBall < 0){
-                this.ball.setIsMove(false)
-                this.state.prevXBall = xBall
-                this.state.prevYBall = yBall
-                // if (Math.abs(xTile - this.prevXTile) < 1){
-                // }
-                // else{
-                //     this.state.a = this.state.a / 2
-                // }
-                this.findNextImpact();
+        if (this.ball.getIsMove() && Math.abs(xBall - this.state.prevXBall) <= Precision && Math.abs(yBall - this.state.prevYBall) <= Precision) {
+            if (this.state.prevYBall === TILE_SIZE.HEIGHT + BALL_SIZE + DISTANCE_CHECK_IMPACT_TILE){
+                const impactTile = handleGetImpactInfo(this.state, xTile - TILE_SIZE.WIDTH / 2, 0, xTile + TILE_SIZE.WIDTH / 2, TILE_SIZE.HEIGHT)
 
+                if (impactTile.distance && impactTile.direction === DIRECTION.UP) {
+                    this.state.direction = impactTile.direction
+                    if (Math.abs(distanceTile) > 1) {
+                        this.state.a = (impactTile.y - yBall) / (impactTile.x - xBall - distanceTile * impactTile.distance / this.speed * 60)
+                    }
+                    else {
+                        this.state.a = - this.state.a;
+                    }
+
+                    this.state.prevXBall = impactTile.x
+                    this.state.prevYBall = impactTile.y
+                    this.ball.move(impactTile.x, impactTile.y, impactTile.distance / this.speed)
+                }
+                else{
+                    if (this.hearts.length > 0){
+                        this.hearts[this.hearts.length - 1].setInvisible();
+                        this.hearts.length--;
+                        if (this.hearts.length > 0) this.reset();
+                    }
+                }
                 return;
             }
-        }
-
-        if (yBall < 0){
-            if (this.hearts.length > 0){
-                this.hearts[this.hearts.length - 1].setInvisible();
-                this.hearts.length--;
-                if (this.hearts.length > 0) this.reset();
-            }
-            return;
-        }
-        if (this.ball.getIsMove() && Math.abs(xBall - this.state.prevXBall) <= Precision && Math.abs(yBall - this.state.prevYBall) <= Precision) {
-            this.ball.setIsMove(false)
             for (let k = 0; k < this.listBrickInvisibleNext.length; k++){
                 const invisibleBrick = this.listBrickInvisibleNext[k];
                 this.listBrick[invisibleBrick.i][invisibleBrick.j].setVisible(false)
@@ -181,6 +185,5 @@ var ScreenDragonbones = cc.Layer.extend({
             this.listBrickInvisibleNext = [];
             this.findNextImpact()
         }
-        this.prevXTile = xTile;
     }
 });
