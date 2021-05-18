@@ -46,20 +46,22 @@ const checkDirection = (y, prevY, direction) => {
     return ((direction === DIRECTION.UP && y >= prevY) || (direction === DIRECTION.DOWN && y <= prevY))
 }
 
-const handleGetImpactInfo = (state, x, y, x1, y1) => {
+const handleGetImpactInfo = (state, x, y, x1, y1, screenSize) => {
     const {a, direction, prevXBall, prevYBall} = state;
     const b = prevYBall - a * prevXBall;
     let result = {}
 
-    const impactLeft = handleCheckImpactLeft(a, b, x, y, y1 )
-    if (impactLeft && checkDirection(impactLeft.y, prevYBall, direction)) {
-        const distanceLeft = getDistance(prevXBall, impactLeft.x, prevYBall, impactLeft.y)
-        if (!result.distance || distanceLeft < result.distance){
-            result = {distance: distanceLeft, direction, x: impactLeft.x, y: impactLeft.y}
+    if (x > BALL_SIZE) {
+        const impactLeft = handleCheckImpactLeft(a, b, x, y, y1)
+        if (impactLeft && checkDirection(impactLeft.y, prevYBall, direction)) {
+            const distanceLeft = getDistance(prevXBall, impactLeft.x, prevYBall, impactLeft.y)
+            if (!result.distance || distanceLeft < result.distance) {
+                result = {distance: distanceLeft, direction, x: impactLeft.x, y: impactLeft.y}
+            }
         }
     }
 
-    if (x1 !== x) {
+    if (x < screenSize.width - BALL_SIZE) {
         const impactRight = handleCheckImpactRight(a, b, x1, y, y1)
         if (impactRight && checkDirection(impactRight.y, prevYBall, direction)) {
             const distanceRight = getDistance(prevXBall, impactRight.x, prevYBall, impactRight.y)

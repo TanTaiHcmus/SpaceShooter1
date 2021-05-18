@@ -75,7 +75,7 @@ var ScreenDragonbones = cc.Layer.extend({
         for (let i = 0; i < this.listBrick.length; i++)
             for (let j = 0; j < REC_AMOUNT; j++) if (this.listBrick[i][j].getVisible()){
                 const {x, y} = this.listBrick[i][j].getPosition();
-                let impact = handleGetImpactInfo(this.state, x, y, x + this.recSize, y + this.recSize)
+                let impact = handleGetImpactInfo(this.state, x, y, x + this.recSize, y + this.recSize, this.size)
                 if (impact.distance){
                     if (arr.length === 0 || impact.distance < arr[0].distance){
                         arr = [impact]
@@ -103,25 +103,25 @@ var ScreenDragonbones = cc.Layer.extend({
             return
         }
 
-        let impactLeftLine = handleGetImpactInfo(this.state, 0, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, 0, this.size.height);
+        let impactLeftLine = handleGetImpactInfo(this.state, 0, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, 0, this.size.height, this.size);
         if (impactLeftLine.distance){
             this.handleMoveBallWhenImpactLine(impactLeftLine)
             return
         }
 
-        let impactRightLine = handleGetImpactInfo(this.state, this.size.width, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, this.size.width, this.size.height);
+        let impactRightLine = handleGetImpactInfo(this.state, this.size.width, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, this.size.width, this.size.height, this.size);
         if (impactRightLine.distance){
             this.handleMoveBallWhenImpactLine(impactRightLine)
             return;
         }
 
-        let impactTopLine = handleGetImpactInfo(this.state, 0, this.size.height, this.size.width, this.size.height);
+        let impactTopLine = handleGetImpactInfo(this.state, 0, this.size.height, this.size.width, this.size.height, this.size);
         if (impactTopLine.distance){
             this.handleMoveBallWhenImpactLine(impactTopLine)
             return;
         }
 
-        let impactBottomLine = handleGetImpactInfo(this.state, 0, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, this.size.width, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE);
+        let impactBottomLine = handleGetImpactInfo(this.state, 0, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, this.size.width, TILE_SIZE.HEIGHT + DISTANCE_CHECK_IMPACT_TILE, this.size);
         if (impactBottomLine.distance){
             this.handleMoveBallWhenImpactLine(impactBottomLine, true)
         }
@@ -154,7 +154,7 @@ var ScreenDragonbones = cc.Layer.extend({
 
         if (this.ball.getIsMove() && Math.abs(xBall - this.state.prevXBall) <= Precision && Math.abs(yBall - this.state.prevYBall) <= Precision) {
             if (this.state.prevYBall === TILE_SIZE.HEIGHT + BALL_SIZE + DISTANCE_CHECK_IMPACT_TILE){
-                const impactTile = handleGetImpactInfo(this.state, xTile - TILE_SIZE.WIDTH / 2, 0, xTile + TILE_SIZE.WIDTH / 2, TILE_SIZE.HEIGHT)
+                const impactTile = handleGetImpactInfo(this.state, xTile - TILE_SIZE.WIDTH / 2, 0, xTile + TILE_SIZE.WIDTH / 2, TILE_SIZE.HEIGHT, this.size)
 
                 if (impactTile.distance && impactTile.direction === DIRECTION.UP) {
                     this.state.direction = impactTile.direction
@@ -170,11 +170,20 @@ var ScreenDragonbones = cc.Layer.extend({
                     this.ball.move(impactTile.x, impactTile.y, impactTile.distance / this.speed)
                 }
                 else{
-                    if (this.hearts.length > 0){
-                        this.hearts[this.hearts.length - 1].setInvisible();
-                        this.hearts.length--;
-                        if (this.hearts.length > 0) this.reset();
-                    }
+                    const b = yBall - this.state.a * xBall
+                    this.state.prevXBall = (-BALL_SIZE - b) / this.state.a;
+                    this.state.prevYBall = -BALL_SIZE;
+                    const distance = getDistance(this.state.prevXBall, xBall, this.state.prevYBall, yBall)
+                    this.ball.move(this.state.prevXBall, this.state.prevYBall, distance / this.speed )
+
+                    setTimeout(() => {
+                        if (this.hearts.length > 0){
+                            this.hearts[this.hearts.length - 1].setInvisible();
+                            this.hearts.length--;
+                            if (this.hearts.length > 0) this.reset();
+                        }
+                    }, distance / this.speed * 1000)
+
                 }
                 return;
             }
